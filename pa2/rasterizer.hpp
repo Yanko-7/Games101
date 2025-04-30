@@ -4,10 +4,11 @@
 
 #pragma once
 
-#include "Triangle.hpp"
-#include "global.hpp"
 #include <Eigen/Eigen>
 #include <algorithm>
+
+#include "Triangle.hpp"
+#include "global.hpp"
 using namespace Eigen;
 
 namespace rst {
@@ -41,7 +42,7 @@ struct col_buf_id {
 };
 
 class rasterizer {
-public:
+ public:
   rasterizer(int w, int h);
   pos_buf_id load_positions(const std::vector<Eigen::Vector3f> &positions);
   ind_buf_id load_indices(const std::vector<Eigen::Vector3i> &indices);
@@ -60,7 +61,7 @@ public:
 
   std::vector<Eigen::Vector3f> &frame_buffer() { return frame_buf; }
 
-private:
+ private:
   void draw_line(Eigen::Vector3f begin, Eigen::Vector3f end);
 
   void rasterize_triangle(const Triangle &t);
@@ -68,7 +69,7 @@ private:
   // VERTEX SHADER -> MVP -> Clipping -> /.W -> VIEWPORT -> DRAWLINE/DRAWTRI ->
   // FRAGSHADER
 
-private:
+ private:
   Eigen::Matrix4f model;
   Eigen::Matrix4f view;
   Eigen::Matrix4f projection;
@@ -87,4 +88,4 @@ private:
   int next_id = 0;
   int get_next_id() { return next_id++; }
 };
-} // namespace rst
+}  // namespace rst

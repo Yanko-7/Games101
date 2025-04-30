@@ -43,16 +43,17 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
 static bool insideTriangle(int x, int y, const Vector3f* _v)
 {   
     Eigen::Vector3f center(x + 0.5,y + 0.5, 1);
-    Eigen::Vector2f v1 = _v[2] - center;
-    Eigen::Vector2f v2 = _v[0] - center;
-    bool flag = v1.cross(v2).norm() > 0;
+    Eigen::Vector3f v1 = _v[2] - center;
+    Eigen::Vector3f v2 = _v[0] - center;
+    double flag = v1.cross(v2).z();
+    //std::cout << flag << std::endl;
+    if(flag == 0) return true;
     for(int i = 1; i < 3; i++){
         v1 = _v[i - 1] - center;
         v2 = _v[i] - center;
-        if(flag != (v1.cross(v2).norm() > 0)) return false;
+        if(flag * v1.cross(v2).z() < 0) return false;
     }
     return true;
-    // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
 }
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
@@ -114,12 +115,15 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
 
 //Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle& t) {
+    // TODO : Find out the bounding box of current triangle.
+    // iterate through the pixel and find if the current pixel is inside the triangle
+    // finished
     auto v = t.toVector4();
     std::array<Vector3f, 3>tt;
     for(int i = 0; i < 3; i++) {
         tt[i] = Vector3f(v[i].x(), v[i].y(), 1.0f);
     }
-    Vector2d left_bot = {v[0].x(),v[0].y()},right_top = {v[1].x(),v[1].y()};
+    Vector2d left_bot = {v[0].x(),v[0].y()},right_top = {v[0].x(),v[0].y()};
         
     for(const auto& v1 : v){
         left_bot.x() = fmin(left_bot.x(), v1.x());
@@ -127,18 +131,28 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
         right_top.x() = fmax(right_top.x(), v1.x());
         right_top.y() = fmax(right_top.y(), v1.y());
     }
-    for(int i = left_bot.x(); i <= right_top.x(); i++){
-        for(int j = left_bot.y(); j <= right_top.y(); j++){
-            if(insideTriangle(i, j, tt.data())){
-                
+    //std::cout << left_bot << std::endl;
+    //std::cout << right_top << std::endl;
+    for(int x = left_bot.x(); x <= right_top.x(); x++){
+        for(int y = left_bot.y(); y <= right_top.y(); y++){
+            if(insideTriangle(x, y, tt.data())){
+                //std:: cout << depth_buf[get_index(x, y)] << std::endl;
+                auto[alpha, beta, gamma] = computeBarycentric2D(x + 0.5, y + 0.5, t.v);
+                //std::cout << alpha <<' '<<beta <<' '<<gamma<<std::endl;
+                float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                z_interpolated *= w_reciprocal;
+                //std::cout << v[0].z() << std::endl;
+                //std::cout <<' ' << depth_buf[get_index(x, y)] <<' '<<z_interpolated<<std::endl;
+                if(depth_buf[get_index(x, y)] > z_interpolated){
+                    Eigen::Vector3f p(x+0.5,y+0.5,1);
+                    set_pixel(p,t.getColor());
+                    depth_buf[get_index(x, y)] = z_interpolated;
+                    //std::cout << z_interpolated << std::endl;
+                }
             }
-            //insideTriangle(i,j, const Vector3f *_v)
-                    
         }
     }
-    // TODO : Find out the bounding box of current triangle.
-    // iterate through the pixel and find if the current pixel is inside the triangle
-
     // If so, use the following code to get the interpolated z value.
     //auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
     //float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
@@ -146,6 +160,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     //z_interpolated *= w_reciprocal;
 
     // TODO : set the current pixel (use the set_pixel function) to the color of the triangle (use getColor function) if it should be painted.
+    // finish
 }
 
 void rst::rasterizer::set_model(const Eigen::Matrix4f& m)
