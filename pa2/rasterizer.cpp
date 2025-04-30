@@ -145,7 +145,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
                 //std::cout << v[0].z() << std::endl;
                 //std::cout <<' ' << depth_buf[get_index(x, y)] <<' '<<z_interpolated<<std::endl;
                 if(depth_buf[get_index(x, y)] > z_interpolated){
-                    Eigen::Vector3f p(x+0.5,y+0.5,1);
+                    Eigen::Vector3f p(x,y,1);
                     set_pixel(p,t.getColor());
                     depth_buf[get_index(x, y)] = z_interpolated;
                     //std::cout << z_interpolated << std::endl;
