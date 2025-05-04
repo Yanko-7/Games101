@@ -13,16 +13,30 @@ bool rayTriangleIntersect(const Vector3f &v0, const Vector3f &v1,
   // that's specified bt v0, v1 and v2 intersects with the ray (whose
   // origin is *orig* and direction is *dir*)
   // Also don't forget to update tnear, u and v.
+
+  auto S = orig - v0;
+  auto E1 = v1 - v0;
+  auto E2 = v2 - v0;
+  auto S1 = crossProduct(dir, E2);
+  auto S2 = crossProduct(S, E1);
+  auto fz = dotProduct(S1, E1);
+  tnear = dotProduct(S2, E2) / fz;
+  u = dotProduct(S1, S) / fz;
+  v = dotProduct(S2, dir) / fz;
+  if (tnear > 0 && u > 0 && v > 0 && 1 - u - v > 0) {
+    return true;
+  }
   return false;
 }
 
 class MeshTriangle : public Object {
- public:
+public:
   MeshTriangle(const Vector3f *verts, const uint32_t *vertsIndex,
                const uint32_t &numTris, const Vector2f *st) {
     uint32_t maxIndex = 0;
     for (uint32_t i = 0; i < numTris * 3; ++i)
-      if (vertsIndex[i] > maxIndex) maxIndex = vertsIndex[i];
+      if (vertsIndex[i] > maxIndex)
+        maxIndex = vertsIndex[i];
     maxIndex += 1;
     vertices = std::unique_ptr<Vector3f[]>(new Vector3f[maxIndex]);
     memcpy(vertices.get(), verts, sizeof(Vector3f) * maxIndex);
